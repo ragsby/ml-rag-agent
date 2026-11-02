@@ -2,6 +2,7 @@
 Same as `answer_question` in the combined chunking notebook. This is what the chat UI uses."""
 
 from langchain_core.prompts import ChatPromptTemplate
+from langsmith import traceable
 
 from src.agent import cache
 from src.agent.llm import get_llm
@@ -17,6 +18,7 @@ RAG_PROMPT = ChatPromptTemplate.from_messages([
 ])
 
 
+@traceable(name="rag_answer")
 def answer_question(question: str, k: int = 5, source: str | None = None, use_cache: bool = True) -> dict:
     """Returns {"answer", "sources": [{"text", "source", "page", "score"}], "context", "cached"}."""
     use_cache = use_cache and source is None  # a cached answer may come from a different PDF filter

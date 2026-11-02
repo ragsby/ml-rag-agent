@@ -5,6 +5,7 @@ This is what the chat page uses."""
 from langchain.agents import create_agent
 from langchain.agents.middleware import ToolCallLimitMiddleware
 from langchain_core.messages import AIMessage, ToolMessage
+from langsmith import traceable
 
 from src.agent import cache
 from src.agent.llm import get_llm
@@ -53,19 +54,29 @@ def collect_sources(messages) -> tuple[list[dict], list[dict], list[dict]]:
     return list(unique.values()), sql, external
 
 
-async def ask_agent(question: str, history: list[dict] | None = None, research: bool = False) -> dict:
+@traceable(name="chat_agent")
+async def ask_agent(question: str, history: list[dict] | None = None, research: bool = False,
+                    allow_cache: bool = True) -> dict:
     """history: earlier turns as [{"role": "user"|"assistant", "content": "..."}].
     research: also use external MCP tools (Hugging Face).
+    allow_cache: False makes evaluation run the real agent on every question.
     Returns {"answer", "sources" (PDF passages), "sql" (queries + rows),
              "external" (MCP tool results), "tools_used", "cached"}."""
     # Cache only standalone questions in normal mode -- follow-ups depend on history, and
     # Research mode answers come from outside data that keeps changing.
-    use_cache = not history and not research
+    use_cache = allow_cache and not history and not research
     if use_cache and (cached := cache.lookup(question, cache.AGENT_CACHE)):
         return {**cached, "cached": True}
 
     agent = await get_agent(research)
-    output = await agent.ainvoke({"messages": (history or []) + [{"role": "user", "content": question}]})
+    messages = (history or []) + [{"role": "user", "content": question}]
+    try:
+        output = await agent.ainvoke({"messages": messages})
+    except Exception as e:
+        # Some models occasionally write a garbled tool call and the provider rejects it. Try once more.
+        if "tool_use_failed" not in str(e):
+            raise
+        output = await agent.ainvoke({"messages": messages})
 
     messages = output["messages"]
     sources, sql, external = collect_sources(messages)

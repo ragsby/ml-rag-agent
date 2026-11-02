@@ -5,10 +5,12 @@
 """
 
 from langchain_core.documents import Document
+from langsmith import traceable
 
 from src.retrieval.vector_store import get_reranker, get_vector_store, source_filter
 
 
+@traceable(name="hybrid_search", run_type="retriever")
 def retrieve_candidates(
     query: str, k: int = 20, source: str | None = None, mode: str = "hybrid", collection: str | None = None
 ) -> list[Document]:
@@ -16,6 +18,7 @@ def retrieve_candidates(
     return get_vector_store(mode, collection).similarity_search(query, k=k, filter=source_filter(source))
 
 
+@traceable(name="rerank")
 def rerank(query: str, docs: list[Document], k: int = 5) -> list[Document]:
     """Stage 2. Score every (question, chunk) pair and keep the k best. Score is saved in metadata."""
     if not docs:

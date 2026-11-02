@@ -42,7 +42,8 @@ Set refused=true if the answer declines because the context doesn't contain the 
 
 
 def judge(question: str, answer: str, context: str) -> Grade:
-    chain = JUDGE_PROMPT | get_llm().with_structured_output(Grade)
+    # Retries: some models occasionally return a malformed grade, which the provider rejects
+    chain = (JUDGE_PROMPT | get_llm().with_structured_output(Grade)).with_retry(stop_after_attempt=3)
     return chain.invoke({"question": question, "answer": answer, "context": context})
 
 

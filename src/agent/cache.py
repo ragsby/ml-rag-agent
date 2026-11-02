@@ -4,6 +4,8 @@ Stored in its own small Qdrant collection."""
 
 import json
 
+from langsmith import traceable
+
 from config import settings
 from src.retrieval.vector_store import create_collection, get_vector_store, reset_collection
 
@@ -15,6 +17,7 @@ def _store(collection: str):
     return get_vector_store("dense", collection=collection)
 
 
+@traceable(name="cache_lookup")
 def lookup(question: str, collection: str = RAG_CACHE) -> dict | None:
     """The saved result (e.g. {"answer": ..., "sources": [...]}) or None."""
     if not settings.enable_semantic_cache:

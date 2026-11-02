@@ -6,5 +6,13 @@
     "Why might DBSCAN have a lower silhouette score than k-means?",
     "How does binning transform a single feature into multiple features?",
     "Why should you avoid tuning parameter ranges using the final test set?"
+  ],
+  "Classic ML algorithms.pdf": [
+    "How does the l1 penalty differ from l2 in promoting sparsity?",
+    "What defines a support vector in an SVM model?",
+    "How does SVM maximize the margin for linearly separable classes?",
+    "What is the difference between bias and variance in ML?",
+    "How do k-nearest neighbors and radius-based neighborhoods differ?",
+    "Why is the kernel trick preferred over explicit mapping functions?"
   ]
 }

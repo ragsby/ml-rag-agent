@@ -10,6 +10,7 @@
   uv run python run_server.py eval --llm                  # + LLM-as-judge (calls the LLM)
   uv run python run_server.py eval --chunking             # compare chunking strategies (slow)
   uv run python run_server.py eval --chunking --file "x.pdf" --pages 140-210 --only "fixed 600,agentic"
+  uv run python run_server.py eval --langsmith --experiment groq-qwen   # saved, comparable run in LangSmith
   uv run python run_server.py mcp                         # our MCP server over stdio
 
 Admin checks (see what the RAG pipeline does with a sample query):
@@ -40,6 +41,9 @@ def main():
     parser.add_argument("--pages", help="eval --chunking: page range like 140-210")
     parser.add_argument("--only", help='eval --chunking: comma-separated strategies, e.g. "fixed 600,semantic"')
     parser.add_argument("--page", type=int, help="chunks: page number")
+    parser.add_argument("--langsmith", action="store_true", help="eval: run the agent as a LangSmith experiment")
+    parser.add_argument("--experiment", default="experiment", help="eval --langsmith: name for this run")
+    parser.add_argument("--limit", type=int, help="eval --langsmith: only use the first N questions")
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -69,7 +73,11 @@ def main():
         from src.evaluation import chunking_eval, llm_eval, retrieval_eval
         from src.evaluation.results import save_results
 
-        if args.chunking:
+        if args.langsmith:
+            from src.evaluation.langsmith_eval import run_experiment
+
+            run_experiment(args.experiment, args.limit)
+        elif args.chunking:
             kwargs = {}
             if args.file:
                 kwargs["file_name"] = Path(args.file).name
